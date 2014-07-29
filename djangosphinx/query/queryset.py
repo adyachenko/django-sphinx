@@ -180,6 +180,16 @@ class SphinxQuerySet(object):
 
         return self._clone(_indexes=_indexes)
 
+    # For queryset
+
+    def select_related(self, *fields, **kwargs):
+        self.queryset = self.queryset.select_related(*fields, **kwargs)
+        return self
+
+    def prefetch_related(self, *lookups):
+        self.queryset = self.queryset.prefetch_related(*lookups)
+        return self
+
     # Querying
 
     def query(self, query):
@@ -402,10 +412,28 @@ class SphinxQuerySet(object):
             yield cursor.fetchone()
 
     def get_query_set(self, model):
-        qs = model._default_manager
         if self.using is not None:
-            qs = qs.db_manager(self.using)
-        return qs.all()
+            self.queryset.using(self.using)
+        self.queryset.model = model
+
+        # if not self._queryset:
+        #     qs = model._default_manager
+        #     if self.using is not None:
+        #         qs = qs.db_manager(self.using)
+        #     self._queryset = qs.all()
+        # return self._queryset
+
+    @property
+    def queryset(self):
+        if not self._queryset:
+            self._queryset = QuerySet()
+        return self._queryset
+
+    @queryset.setter
+    def queryset(self, value):
+        self._queryset = value
+
+    # queryset = property(_get_queryset)
 
     # Properties
 
