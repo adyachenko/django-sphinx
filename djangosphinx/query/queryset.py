@@ -63,7 +63,7 @@ class SphinxQuerySet(object):
     def __init__(self, model=None, using=None, **kwargs):
         self.model = model
         self.using = using
-        self._queryset = None
+        self.queryset = QuerySet()
         self.realtime = None
         self._doc_ids = None
 
@@ -416,25 +416,6 @@ class SphinxQuerySet(object):
         if self.using is not None:
             self.queryset.using(self.using)
         self.queryset.model = model
-
-        # if not self._queryset:
-        #     qs = model._default_manager
-        #     if self.using is not None:
-        #         qs = qs.db_manager(self.using)
-        #     self._queryset = qs.all()
-        # return self._queryset
-
-    @property
-    def queryset(self):
-        if self._queryset is None:
-            self._queryset = QuerySet()
-        return self._queryset
-
-    @queryset.setter
-    def queryset(self, value):
-        self._queryset = value
-
-    # queryset = property(_get_queryset)
 
     # Properties
 
