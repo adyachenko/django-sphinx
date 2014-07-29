@@ -63,6 +63,7 @@ class SphinxQuerySet(object):
     def __init__(self, model=None, using=None, **kwargs):
         self.model = model
         self.using = using
+        self._queryset = None
         self.realtime = None
         self._doc_ids = None
 
