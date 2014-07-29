@@ -1,5 +1,6 @@
 #coding: utf-8
 from __future__ import unicode_literals
+from copy import deepcopy
 
 __author__ = 'ego'
 
@@ -824,7 +825,7 @@ class SphinxQuerySet(object):
         Clones the queryset passing any changed args\
         """
         c = self.__class__()
-        c.__dict__.update(self.__dict__.copy())
+        c.__dict__.update(deepcopy(self.__dict__))
 
         c._result_cache = None
         c._metadata = None
