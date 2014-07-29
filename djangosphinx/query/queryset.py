@@ -825,7 +825,10 @@ class SphinxQuerySet(object):
         Clones the queryset passing any changed args\
         """
         c = self.__class__()
-        c.__dict__.update(deepcopy(self.__dict__))
+        try:
+            c.__dict__.update(deepcopy(self.__dict__))
+        except AttributeError:
+            c.__dict__.update(self.__dict__.copy())
 
         c._result_cache = None
         c._metadata = None
