@@ -1,5 +1,6 @@
 #coding: utf-8
 from __future__ import unicode_literals
+from django.db.models import sql
 
 __author__ = 'ego'
 
@@ -416,6 +417,8 @@ class SphinxQuerySet(object):
         if self.using is not None:
             self.queryset.using(self.using)
         self.queryset.model = model
+        self.queryset.query = sql.Query(model)
+        return self.queryset
 
     # Properties
 
