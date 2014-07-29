@@ -206,7 +206,7 @@ def _process_options_for_model_fields(options, model_fields, model_class):
 
     # если included_fields не заполнен - выбираем все поля модели
     if not fields:
-        fields = [f for f in model_class._meta.fields if f not in pks and f not in excluded_fields]
+        fields = [f for f in model_class._meta.fields if f not in pks and f.name not in excluded_fields]
         indexes = pks
 
     # наполняем список stored полей
