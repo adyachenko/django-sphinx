@@ -426,7 +426,7 @@ class SphinxQuerySet(object):
 
     @property
     def queryset(self):
-        if not self._queryset:
+        if self._queryset is None:
             self._queryset = QuerySet()
         return self._queryset
 
