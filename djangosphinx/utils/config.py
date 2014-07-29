@@ -90,11 +90,9 @@ def _get_default_sphinx_params(using='default'):
     params.update(default_sphinx_params)
     return params
 
-DEFAULT_SPHINX_PARAMS = property(_get_default_sphinx_params)
-
 
 def get_index_context(index):
-    params = DEFAULT_SPHINX_PARAMS
+    params = _get_default_sphinx_params()
     params.update({
         'index_name': index,
         'source_name': index,
@@ -104,7 +102,7 @@ def get_index_context(index):
 
 
 def get_conf_context():
-    params = DEFAULT_SPHINX_PARAMS
+    params = _get_default_sphinx_params()
     return params
 
 
@@ -511,7 +509,7 @@ def generate_source_for_model(model_class, index=None, sphinx_params=None):
             stored_attrs.setdefault(key, []).extend(related_stored_attrs[key])
 
         rt_index = '%s_rt' % index
-        rt_index_context = DEFAULT_SPHINX_PARAMS
+        rt_index_context = _get_default_sphinx_params(_get_using_db(model_class))
         rt_index_context.update(dict(
             index_name=rt_index,
             rt_fields=rt_fields,
