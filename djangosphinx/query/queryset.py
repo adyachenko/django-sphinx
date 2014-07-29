@@ -73,6 +73,8 @@ class SphinxQuerySet(object):
         self._query = None
         self._query_args = None
 
+        self._only_meta = False
+
         self._field_names = {}
         self._fields = '*'
         self._aliases = {}
@@ -282,7 +284,13 @@ class SphinxQuerySet(object):
         return self
 
     def count(self):
-        return min(int(self.meta.get('total_found', 0)), self._maxmatches)
+        store_qs = self.queryset._clone()
+        self.only('id')
+        self._only_meta = True
+        result = min(int(self.meta.get('total_found', 0)), self._maxmatches)
+        self._only_meta = False
+        self.queryset = store_qs
+        return result
 
     # Возвращяет все объекты из индекса. Размер списка ограничен только
     # значением maxmatches
@@ -481,7 +489,8 @@ class SphinxQuerySet(object):
         self._iter = SphinxQuery(self.query_string, self._query_args)
         self._result_cache = []
         self._metadata = self._iter.meta
-        self._fill_cache()
+        if not self._only_meta:
+            self._fill_cache()
 
     ## Options
     def _parse_indexes(self, index):
