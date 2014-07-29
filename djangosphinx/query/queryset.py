@@ -425,7 +425,7 @@ class SphinxQuerySet(object):
         if self.using is not None:
             self.queryset.using(self.using)
         self.queryset.model = model
-        self.queryset.query = sql.Query(model)
+        self.queryset.query.model = model
         return self.queryset
 
     # Properties
