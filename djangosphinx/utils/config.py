@@ -19,11 +19,11 @@ __all__ = ('generate_config_for_model', 'generate_config_for_models', 'generate_
 DJANGO_MINOR_VERSION = float(".".join([str(django.VERSION[0]), str(django.VERSION[1])]))
 
 
-def _get_database_engine():
+def _get_database_engine(using='default'):
     if DJANGO_MINOR_VERSION < 1.2:
         _engine = settings.DATABASE_ENGINE
     else:
-        _engine = settings.DATABASES['default']['ENGINE']
+        _engine = settings.DATABASES[using or 'default']['ENGINE']
 
     if 'mysql' in _engine:
         return 'mysql'
@@ -31,6 +31,12 @@ def _get_database_engine():
         return 'pgsql'
 
     raise ValueError("Only MySQL and PostgreSQL, and PostGIS engines are supported by Sphinx.")
+
+
+def _get_using_db(model_class=None):
+    if not model_class:
+        return 'default'
+    return django.db.router.db_for_read(model_class)
 
 
 def _get_template(name, index=None):
@@ -60,25 +66,31 @@ def _is_sourcable_field(field):
 # No trailing slashes on paths
 
 
-if DJANGO_MINOR_VERSION < 1.2:
-    DEFAULT_SPHINX_PARAMS = {
-        'database_engine': _get_database_engine(),
-        'database_host': settings.DATABASE_HOST,
-        'database_port': settings.DATABASE_PORT,
-        'database_name': settings.DATABASE_NAME,
-        'database_user': settings.DATABASE_USER,
-        'database_password': settings.DATABASE_PASSWORD,
-    }
-else:
-    DEFAULT_SPHINX_PARAMS = {
-        'database_engine': _get_database_engine(),
-        'database_host': settings.DATABASES['default']['HOST'],
-        'database_port': settings.DATABASES['default']['PORT'],
-        'database_name': settings.DATABASES['default']['NAME'],
-        'database_user': settings.DATABASES['default']['USER'],
-        'database_password': settings.DATABASES['default']['PASSWORD'],
-    }
-DEFAULT_SPHINX_PARAMS.update(SEARCHD_SETTINGS)
+def _get_default_sphinx_params(using='default'):
+    params = {}
+    params.update(SEARCHD_SETTINGS)
+    if DJANGO_MINOR_VERSION < 1.2:
+        default_sphinx_params = {
+            'database_engine': _get_database_engine(),
+            'database_host': settings.DATABASE_HOST,
+            'database_port': settings.DATABASE_PORT,
+            'database_name': settings.DATABASE_NAME,
+            'database_user': settings.DATABASE_USER,
+            'database_password': settings.DATABASE_PASSWORD,
+        }
+    else:
+        default_sphinx_params = {
+            'database_engine': _get_database_engine(using),
+            'database_host': settings.DATABASES[using]['HOST'],
+            'database_port': settings.DATABASES[using]['PORT'],
+            'database_name': settings.DATABASES[using]['NAME'],
+            'database_user': settings.DATABASES[using]['USER'],
+            'database_password': settings.DATABASES[using]['PASSWORD'],
+        }
+    params.update(default_sphinx_params)
+    return params
+
+DEFAULT_SPHINX_PARAMS = property(_get_default_sphinx_params)
 
 
 def get_index_context(index):
@@ -244,7 +256,7 @@ def _process_mva_fields_for_model(options, model_class, content_type, indexes):
 
             related_target_field = related_model_class._meta.get_field(field.m2m_reverse_target_field_name())
 
-            doc_id = content_type.pk if _get_database_engine() == 'mysql' else 'CAST(%i as BIGINT)' % content_type.pk
+            doc_id = content_type.pk if _get_database_engine(using=_get_using_db(model_class)) == 'mysql' else 'CAST(%i as BIGINT)' % content_type.pk
 
             query = ''.join(['SELECT %s<<%i|%s.%s, %s.%s ' % (doc_id,
                                                               DOCUMENT_ID_SHIFT,
@@ -347,22 +359,23 @@ def _process_related_fields(options, model_class):
 def get_source_context(tables, index_name, fields, indexes, mva_fields,
                         related_fields, join_statements, content_types,
                         stored_attrs, stored_string_fields, stored_related_attrs,
-                        document_content_type):
+                        document_content_type, model_class):
+    using_db = _get_using_db(model_class)
 
     if len(indexes) > 1:
         raise NotImplementedError ('Support for generating document identifier of a composite index is not yet available')
     else:
         doc_id = indexes[0]
 
-    content_type_id = document_content_type.pk if _get_database_engine() == 'mysql' \
+    content_type_id = document_content_type.pk if _get_database_engine(using_db) == 'mysql' \
                                                 else 'CAST(%i as BIGINT)' % document_content_type.pk
 
-    context = DEFAULT_SPHINX_PARAMS
+    context = _get_default_sphinx_params(using_db)
     context.update({
         'tables': tables,
         'source_name': index_name,
         'index_name': index_name,
-        'database_engine': _get_database_engine(),
+        'database_engine': _get_database_engine(using_db),
 
         'fields': ['%s.%s' % (f.model._meta.db_table, f.column) for f in fields],
         'mva_fields': mva_fields,
@@ -449,6 +462,7 @@ def generate_source_for_model(model_class, index=None, sphinx_params=None):
         stored_fields,
         related_stored_attrs,
         content_type,
+        model_class
     )
 
     main_source_context.update({
