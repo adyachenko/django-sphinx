@@ -123,7 +123,7 @@ class SphinxQuerySet(object):
             try:
                 self._get_data()
             except MySQLdb.ProgrammingError as e:
-                raise SearchError(e.args + (self.query_string,))
+                raise SearchError(e.args + (self.query_string % self._query_args,))
 
         return iter(self._result_cache)
 
