@@ -252,7 +252,10 @@ class SphinxQuerySet(object):
             if arg == 'pk':
                 arg = 'id'
 
-            sort_by.append('`%s` %s' % (arg, order))
+            if arg.startswith('@'):
+                sort_by.append('%s %s' % (arg, order))
+            else:
+                sort_by.append('`%s` %s' % (arg, order))
 
         if sort_by:
             return self._clone(_group_order_by='WITHIN GROUP ORDER BY %s' % ', '.join(sort_by))
