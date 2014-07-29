@@ -192,6 +192,14 @@ class SphinxQuerySet(object):
         self.queryset = self.queryset.prefetch_related(*lookups)
         return self
 
+    def only(self, *fields):
+        self.queryset = self.queryset.only(*fields)
+        return self
+
+    def defer(self, *fields):
+        self.queryset = self.queryset.defer(*fields)
+        return self
+
     # Querying
 
     def query(self, query):
