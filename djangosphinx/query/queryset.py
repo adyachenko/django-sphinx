@@ -818,8 +818,8 @@ class SphinxQuerySet(object):
 
         if self._snippet_dict:
             q.append(', ')
-            q.append(', '.join(["SNIPPET(%%s, %%s) as %s" % key for key in self._snippet_dict.keys()]))
-            self._query_args += chain(*[[attr, self._query] for to_field, attr in self._snippet_dict.items()])
+            q.append(', '.join(["SNIPPET(%s, %%s) as `%s`" % (attr, to_field) for to_field, attr in self._snippet_dict.items()]))
+            self._query_args += [self._query] * len(self._snippet_dict)
         return q
 
     def _build_where(self):
