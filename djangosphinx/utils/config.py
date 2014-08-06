@@ -357,7 +357,7 @@ def _process_related_fields(options, model_class):
 def get_source_context(tables, index_name, fields, indexes, mva_fields,
                         related_fields, join_statements, content_types,
                         stored_attrs, stored_string_fields, stored_related_attrs,
-                        document_content_type, model_class):
+                        document_content_type, model_class, where=None):
     using_db = _get_using_db(model_class)
 
     if len(indexes) > 1:
@@ -384,6 +384,8 @@ def get_source_context(tables, index_name, fields, indexes, mva_fields,
         'stored_attrs': stored_attrs,
         'stored_string_fields': stored_string_fields,
         'stored_related_attrs': stored_related_attrs,
+
+        'where': where,
 
         'document_id': '%s<<%i|%s.%s' % (content_type_id,
                                                DOCUMENT_ID_SHIFT,
@@ -446,6 +448,9 @@ def generate_source_for_model(model_class, index=None, sphinx_params=None):
     if index is None:
         index = table
 
+    # Условие для запроса индекса
+    where = options.get('where')
+
     # Основной источник данных
     main_source_context = get_source_context(
         ['table'],
@@ -460,7 +465,8 @@ def generate_source_for_model(model_class, index=None, sphinx_params=None):
         stored_fields,
         related_stored_attrs,
         content_type,
-        model_class
+        model_class,
+        where
     )
 
     main_source_context.update({
