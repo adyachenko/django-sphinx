@@ -204,9 +204,10 @@ class SphinxQuerySet(object):
         return self
 
     def defer(self, *fields):
-        self.queryset = self.queryset.defer(*fields)
-        self._excluded_fields += fields
-        return self
+        c = self._clone()
+        c.queryset = self.queryset.defer(*fields)
+        c._excluded_fields = self._excluded_fields + list(fields)
+        return c
 
     # Querying
 
