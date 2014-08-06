@@ -1,5 +1,6 @@
 #coding: utf-8
 from __future__ import unicode_literals
+from itertools import chain
 from django.db.models import sql
 
 __author__ = 'ego'
@@ -104,6 +105,8 @@ class SphinxQuerySet(object):
         self._snippets = kwargs.pop('snippets', SPHINX_SNIPPETS)
         self._snippets_opts = kwargs.pop('snippets_options', SPHINX_SNIPPETS_OPTS)
         self._snippets_string = None
+
+        self._snippet_dict = {}
 
         if model:
             #self._indexes = self._parse_indexes(kwargs.pop('index', model._meta.db_table))
@@ -242,6 +245,12 @@ class SphinxQuerySet(object):
                 v = int(v)
 
         return self._clone(_snippets_opts=kwargs, _snippets=snippets, _snippets_opts_string=None)
+
+    def snippet(self, attr, to_filed=None):
+        to_filed = to_filed or attr
+        snippet_dict = self._snippet_dict.copy()
+        snippet_dict[to_filed] = attr
+        return self._clone(_snippet_dict=snippet_dict)
 
     # Currently only supports grouping by a single column.
     # The column however can be a computed expression
@@ -802,11 +811,15 @@ class SphinxQuerySet(object):
         q = []
         if self._fields:
             q.append(self._fields)
-            if self._aliases:
-                q.append(',')
 
         if self._aliases:
+            q.append(', ')
             q.append(', '.join(self._aliases.values()))
+
+        if self._snippet_dict:
+            q.append(', ')
+            q.append(', '.join(["SNIPPET(%s, '%s') as %s" for i in self._snippet_dict.keys()]))
+            self._query_args += chain([attr, self._query, to_field] for to_field, attr in self._snippet_dict.items())
         return q
 
     def _build_where(self):
