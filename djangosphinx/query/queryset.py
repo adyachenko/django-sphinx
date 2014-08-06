@@ -86,6 +86,8 @@ class SphinxQuerySet(object):
         self._filters = {}
         self._excludes = {}
 
+        self._excluded_fields = []
+
         _q_opts = kwargs.pop('query_options', SPHINX_QUERY_OPTS)
         if 'ranker' not in _q_opts:
             _q_opts['ranker'] = 'bm25'
@@ -203,6 +205,7 @@ class SphinxQuerySet(object):
 
     def defer(self, *fields):
         self.queryset = self.queryset.defer(*fields)
+        self._excluded_fields += fields
         return self
 
     # Querying
@@ -619,7 +622,7 @@ class SphinxQuerySet(object):
 
             opts = instance.__sphinx_options__
             included = opts.get('included_fields', [])
-            excluded = opts.get('excluded_fields', [])
+            excluded = opts.get('excluded_fields', []) + self._excluded_fields
             stored_attrs = opts.get('stored_attributes', [])
             stored_fields = opts.get('stored_fields', [])
             if included:
